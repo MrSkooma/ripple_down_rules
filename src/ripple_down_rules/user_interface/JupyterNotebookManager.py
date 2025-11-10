@@ -60,12 +60,21 @@ class JupyterNotebookManager:
         if rdr_instance and hasattr(rdr_instance, 'rdr_dot') and rdr_instance.rdr_dot:
             try:
                 user_interface_dir = os.path.dirname(__file__)
+                svg_output_path = os.path.join(self.output_dir, "rule_tree")
+
+                # Ensure the RDR graph is fully expanded before rendering
+                if hasattr(rdr_instance.rdr_dot, 'expand_all'):
+                    rdr_instance.rdr_dot.expand_all()
+
+                # Render the rule tree
                 case_query.render_rule_tree(
-                    os.path.join(user_interface_dir, "rule_tree"),
+                    svg_output_path,
                     view=False
                 )
-                svg_file_path = os.path.join(user_interface_dir, "rule_tree.svg")
+
+                svg_file_path = f"{svg_output_path}.svg"
                 if not os.path.exists(svg_file_path):
+                    print_func(f"Warning: SVG file not created at {svg_file_path}")
                     svg_file_path = None
             except Exception as e:
                 print_func(f"Warning: Could not generate rule tree: {e}")
@@ -240,8 +249,8 @@ class JupyterNotebookManager:
             env['PYTHONPATH'] = f"{project_root}:{python_path}" if python_path else project_root
 
             self.process = subprocess.Popen(
-                # ['jupyter', 'notebook', self.notebook_path],
-                  ['pycharm', self.notebook_path],
+                # ['jupyter', 'pycharm-professional' 'notebook', self.notebook_path],
+                  ['pycharm-professional', self.notebook_path],
                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=env
             )
         except FileNotFoundError:

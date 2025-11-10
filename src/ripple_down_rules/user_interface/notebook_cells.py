@@ -359,7 +359,8 @@ from IPython.display import display
 # Create toolbar buttons
 apply_rule_btn = widgets.Button(description="Apply Rule", button_style="success")
 accept_rule_btn = widgets.Button(description="Accept Rule", button_style="primary")
-toolbar = widgets.HBox([apply_rule_btn, accept_rule_btn])
+discard_rule_btn = widgets.Button(description="Discard Rule", button_style="danger")
+toolbar = widgets.HBox([apply_rule_btn, accept_rule_btn, discard_rule_btn])
 toolbar.add_class('rdr-toolbar')
 
 def on_apply_rule(btn):
@@ -387,12 +388,12 @@ def send_cells_to_main_process(btn):
         cells = ns.get('_ih') or ns.get('In') or []
         target = None
         pattern = re.compile(r'^\\s*(async\\s+)?def\\s+' + re.escape(TARGET_FUNC_NAME) + r'\\s*\\(', flags=re.M)
-        
+    
         for content in reversed(cells):
             if isinstance(content, str) and pattern.search(content):
                 target = content
                 break
-        
+    
         if target:
             with open(COMM_FILE, 'w') as f:
                 json.dump({{'timestamp': time.time(), 'function_source': target}}, f)
@@ -405,15 +406,30 @@ def send_cells_to_main_process(btn):
         print(f"Error writing function: {{e}}")
         import traceback
         traceback.print_exc()
-    
+
     # Best-effort visualization update
     try:
         on_apply_rule(btn)
     except Exception:
         pass
 
+def discard_rule(btn):
+    \"\"\"Write None to communication file to discard the rule.\"\"\"
+    print("Discarding rule...")
+    try:
+        with open(COMM_FILE, 'w') as f:
+            json.dump({{'timestamp': time.time(), 'function_source': None}}, f)
+            f.flush()
+            os.fsync(f.fileno())
+        print(f"Rule discarded, None written to: {{COMM_FILE}}")
+    except Exception as e:
+        print(f"Error discarding rule: {{e}}")
+        import traceback
+        traceback.print_exc()
+
 apply_rule_btn.on_click(on_apply_rule)
 accept_rule_btn.on_click(send_cells_to_main_process)
+discard_rule_btn.on_click(discard_rule)
 
 display(toolbar)
 """
